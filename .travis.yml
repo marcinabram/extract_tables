@@ -1,0 +1,23 @@
+language: python
+
+# module will be tested with all listed python version
+python:
+  - "3.6"
+
+# command to install dependencies
+install:
+  - python3.6 -m venv env
+  - . env/bin/activate
+  - pip3 install -r requirements.txt
+
+# command to run tests
+script:
+  - coverage run --source='.' -m unittest discover tests "*_test.py"
+  - coverage report -m --omit=
+    "tests/*","setup.py","*/__init__.py","env/*" --fail-under=100
+  - python tests/test_all_of_the_units.py
+
+# module will be tested only on listed branches
+branches:
+  only:
+    - master
