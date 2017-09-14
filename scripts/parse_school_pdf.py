@@ -7,8 +7,9 @@ import extract_tables.school
 path = 'tests/resources/Schools_selection.pdf'
 reader = extract_tables.school.Reader(path)
 table = reader.process_all()
+
+for line in table:
+    print(line)
+
 table = pandas.DataFrame(table)
-
-print(table)
-
-table.to_csv('schools.csv')
+table.to_csv('schools.csv', index=False)

@@ -1,6 +1,7 @@
 """Tests."""
 import unittest
 
+import pandas
 import extract_tables.school
 
 
@@ -37,13 +38,21 @@ class TestSchool(unittest.TestCase):
         """Transform the last row into dataframe."""
         text = self.reader.extract_text(page=2)
         row = self.reader.extract_last_row(text)
-        self.assertEqual(
-            row, ('1501578VocationalAl-Tahreer', '36 44 04.443 05 37.1504'))
+        row = self.reader.parse_last_row(row)
+
+        print(row)
+
+        self.assertEqual(row['School\rID'], '1501578')
+        self.assertEqual(row['School Name'], 'Al-Tahreer')
+        self.assertEqual(row['GPS\r- N -'], '36 44 04.4')
+        self.assertEqual(row['GPS\r- E -'], '43 05 37.1')
+        self.assertEqual(row['Total\rStudent'], '50')
+        self.assertEqual(row['Total\rTeachers'], '4')
 
     def test_process_all(self):
         """Test if a few pages can be processed."""
         huge_table = self.reader.process_all(pages=[2, 3])
-        self.assertEqual(len(huge_table), 122)
+        self.assertEqual(len(huge_table), 121)
 
 if __name__ == '__main__':
     unittest.main()

@@ -48,6 +48,9 @@ class Reader:
                     current_district = row[0]
                     continue
 
+                if 'School' in str(row[0]):
+                    continue
+
                 row = series_to_dict(row)
                 row['Governorate'] = gov
                 row['District'] = current_district
@@ -59,10 +62,11 @@ class Reader:
         """Process a selected page. Return table and meta-information."""
         text = self.extract_text(page)
         governorate = self.extract_governorate(text)
+        last_row = self.extract_last_row(text)
+        last_row = self.parse_last_row(last_row)
 
         table = self.extract_table(page)
-        last_row = self.extract_last_row(text)
-        table = self.append_last_row(table, last_row)
+        table = table.append(pandas.Series(last_row), ignore_index=True)
 
         return table, governorate
 
@@ -93,21 +97,6 @@ class Reader:
             return first_word[3:]
         return None
 
-    def extract_table(self, page):
-        """Extract table from page.
-
-        Args:
-            page (int)
-
-        Return:
-            table (pandas.DataFrame)
-        """
-        page += 1  # tabula counts from 1
-        assert 0 < page <= self.no_pages
-
-        args_for_tabula_java = {'pages': page, 'lattice': True}
-        return tabula.read_pdf(self.path, **args_for_tabula_java)
-
     @staticmethod
     def extract_last_row(text):
         """Extract last row from the free text.
@@ -130,12 +119,12 @@ class Reader:
         return None
 
     @staticmethod
-    def append_last_row(table, last_row):
-        """Append last row to table.
+    def parse_last_row(last_row):
+        """Parse last row.
 
         The last_row has format:
             ('1500620PrimaryAl-Taherah', '36 16 17.343 22 43.183827')
-        It must be transformer into pandas.DataFrame and appended to the table.
+        It must be transformer into a dictionary.
         """
         def find_possition_of_upper_latters(line):
             """Find positions of upper letters."""
@@ -148,7 +137,7 @@ class Reader:
 
         def split_students_and_teachers(line):
             """Find number of students."""
-            line = line[21:]
+            line = line[20:]
             if len(line) > 5:
                 return line[:-2], line[-2:]
             else:
@@ -162,12 +151,27 @@ class Reader:
             'School Type': school_type,
             'School Name': school_name,
             'GPS\r- N -': last_row[1][:10],
-            'GPS\r- E -': last_row[1][11:20],
+            'GPS\r- E -': last_row[1][10:20],
             'Total\rStudent': no_students,
             'Total\rTeachers': no_teachers
         }
 
-        return table.append(pandas.Series(row), ignore_index=True)
+        return row
+
+    def extract_table(self, page):
+        """Extract table from page.
+
+        Args:
+            page (int)
+
+        Return:
+            table (pandas.DataFrame)
+        """
+        page += 1  # tabula counts from 1
+        assert 0 < page <= self.no_pages
+
+        args_for_tabula_java = {'pages': page, 'lattice': True}
+        return tabula.read_pdf(self.path, **args_for_tabula_java)
 
     def __del__(self):
         """Clean up."""
