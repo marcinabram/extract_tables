@@ -28,7 +28,7 @@ class Reader:
             table (pandas.DataFrame): one table from all the pages.
         """
         def series_to_dict(series):
-            """Change each field of the row to str."""
+            """Change pandas.Series to native dictionary."""
             dic = series.to_dict()
             for k in dic:
                 dic[k] = str(dic[k])
@@ -56,7 +56,7 @@ class Reader:
                 row['District'] = current_district
                 results.append(row)
 
-        return results
+        return self.clean_keys(results)
 
     def process(self, page):
         """Process a selected page. Return table and meta-information."""
@@ -99,23 +99,49 @@ class Reader:
 
     @staticmethod
     def extract_last_row(text):
-        """Extract last row from the free text.
+        """Extract last row from the free text of the page."""
+        def recognize_beginning(line):
+            """Return True if the the line looks like a beginning of a row.
 
-        The test part should have form:
-            ['1500620PrimaryAl-Taherah',
-            ['36 16 17.343 22 43.183827']
-        """
+            Usually the line starts with a school id (7 numbers).
+            """
+            school_id = line[:7]
+            if len(school_id) == 7 and school_id.isnumeric():
+                return True
+            return False
+
+        def recognize_end(line):
+            """Return True if the line looks like an end of a row.
+
+            Usually, such line ends with '2digits.a_number' or a long number.
+            """
+            section = line.split()
+            try:
+                part = section[-1].split('.')
+                if len(part) == 2:
+                    if len(part[0]) == 2 and part[0].isnumeric():
+                        if len(part[1]) >= 3 and part[1].isnumeric():
+                            return True
+                elif line and len(line[-4:]) == 4 and line[-4:].isnumeric():
+                    return True
+            except IndexError:
+                return False
+            return False
 
         lines = text.split('\n')
 
+        beginning, end = None, None
         position = len(lines) - 1
         while position > 0:
-            try:
-                int(lines[position][:7])
-                return lines[position], lines[position + 1]
-            except ValueError:
-                position -= 1
+            if recognize_end(lines[position]):
+                end = position
+            if recognize_beginning(lines[position]):
+                beginning = position
+                break
+            position -= 1
 
+        if beginning is not None and end is not None:
+            return "".join(lines[beginning:end+1])
         return None
 
     @staticmethod
@@ -126,32 +152,58 @@ class Reader:
             ('1500620PrimaryAl-Taherah', '36 16 17.343 22 43.183827')
         It must be transformer into a dictionary.
         """
-        def find_possition_of_upper_latters(line):
-            """Find positions of upper letters."""
-            return [i for i in range(len(line)) if line[i] != line[i].lower()]
+        def extract_id(line):
+            """Extract school id."""
+            return line[:7], line[7:]
 
-        def split_school_type_and_name(line):
-            """Find school type."""
-            pos = find_possition_of_upper_latters(line)
-            return line[pos[0]:pos[1]], line[pos[1]:]
+        def extract_school_type(line):
+            """Extract school type. Return the rest of the """
+            upper = find_position_of_upper_letters(line)
+            return line[:upper[1]], line[upper[1]:]
+
+        def find_position_of_upper_letters(line):
+            """Find positions of upper letters."""
+            return [i for i in range(len(line)) if line[i].isupper()]
+
+        def extract_school_name(line):
+            """Extract school name from the string."""
+            numbers = find_position_of_numbers(line)
+            return line[:numbers[0]], line[numbers[0]:]
+
+        def find_position_of_numbers(line):
+            """Find positions of numbers."""
+            return [i for i in range(len(line)) if line[i].isdigit()]
+
+        def extract_latitude(line):
+            """Extract the latitude of the place."""
+            return line[:10], line[10:]
+
+        def extract_longitude(line):
+            """Extract the longitude of the place."""
+            return line[:10], line[10:]
 
         def split_students_and_teachers(line):
             """Find number of students."""
-            line = line[20:]
             if len(line) > 5:
                 return line[:-2], line[-2:]
             else:
                 return line[:-1], line[-1]
 
-        school_type, school_name = split_school_type_and_name(last_row[0])
-        no_students, no_teachers = split_students_and_teachers(last_row[1])
+        print('**', last_row)
+
+        school_id, rest = extract_id(last_row)
+        school_type, rest = extract_school_type(rest)
+        school_name, rest = extract_school_name(rest)
+        latitude, rest = extract_latitude(rest)
+        longitude, rest = extract_longitude(rest)
+        no_students, no_teachers = split_students_and_teachers(rest)
 
         row = {
-            'School\rID': last_row[0][:7],
+            'School\rID': school_id,
             'School Type': school_type,
             'School Name': school_name,
-            'GPS\r- N -': last_row[1][:10],
-            'GPS\r- E -': last_row[1][10:20],
+            'GPS\r- N -': latitude,
+            'GPS\r- E -': longitude,
             'Total\rStudent': no_students,
             'Total\rTeachers': no_teachers
         }
@@ -172,6 +224,17 @@ class Reader:
 
         args_for_tabula_java = {'pages': page, 'lattice': True}
         return tabula.read_pdf(self.path, **args_for_tabula_java)
+
+    @staticmethod
+    def clean_keys(table):
+        """Save table to csv."""
+        def replace_line(line):
+            """Translate keys."""
+            return {new: line[old] for new, old in zip(new_keys, old_keys)}
+
+        old_keys = table[0].keys()
+        new_keys = [k.replace('\r', ' ') for k in table[0].keys()]
+        return [replace_line(line) for line in table]
 
     def __del__(self):
         """Clean up."""

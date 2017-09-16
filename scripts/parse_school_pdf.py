@@ -4,12 +4,8 @@ import pandas
 import extract_tables.school
 
 
-path = 'tests/resources/Schools_selection.pdf'
+path = '/data/pdf-tables/shools-tables.pdf'
 reader = extract_tables.school.Reader(path)
-table = reader.process_all()
-
-for line in table:
-    print(line)
-
+table = reader.process_all(list(range(167)))
 table = pandas.DataFrame(table)
 table.to_csv('schools.csv', index=False)
