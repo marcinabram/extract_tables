@@ -105,3 +105,4 @@ ENV/
 *.json
 *.dat
 *.png
+*.csv

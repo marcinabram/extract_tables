@@ -21,7 +21,8 @@ class TestSchool(unittest.TestCase):
             gov = self.reader.extract_governorate(text)
             results.append(gov)
 
-        self.assertEqual(results, ['Ninevah']*3 + ['Salaheldin'])
+        self.assertEqual(
+            results, ['Ninevah Governorate']*3 + ['Salaheldin Governorate'])
 
     def test_last_row(self):
         """Test if you can extract the last row."""
@@ -32,7 +33,7 @@ class TestSchool(unittest.TestCase):
 
         text = "\n".join([line1, line2, line3, line4])
         last_row = self.reader.extract_last_row(text)
-        self.assertEqual(last_row, (line2, line3))
+        self.assertEqual(last_row, (line2 + line3))
 
     def test_last_row_as_df(self):
         """Transform the last row into dataframe."""

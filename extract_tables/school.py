@@ -34,7 +34,7 @@ class Reader:
                 dic[k] = str(dic[k])
             return dic
 
-        if not pages:
+        if not pages:  # pragma: no cover
             pages = range(self.no_pages)
 
         current_district = None
