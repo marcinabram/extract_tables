@@ -88,14 +88,27 @@ class Reader:
     def extract_governorate(text):
         """Extract title of the table.
 
-        The title is at the beginning of the text: 'xxxTITLE Governorate ...',
-        where xxx is the number of the page.
+        The title is at the beginning of the text.
+        The format is 'xxxTitleGovernorateSchool...', where xxx is a number.
         """
-        text = text[:100]
-        if 'Governorate' in text:
-            first_word = text.split()[0]
-            return first_word[3:]
-        return None
+        def add_missing_spaces(line):
+            """Add spaces in middle of a small-letter-upper-letter sequence."""
+            prev_lower = set([i+1 for i, c in enumerate(line) if c.islower()])
+            current_upper = set([i for i, c in enumerate(line) if c.isupper()])
+            split = prev_lower & current_upper
+            line = [' ' + c if i in split else c for i, c in enumerate(line)]
+            return "".join(line)
+
+        def remove_numners(line):
+            """Remove numbers from string."""
+            return "".join([i for i in line if i.isalpha()])
+
+        gov = text.split('School')[0]
+        gov = remove_numners(gov)
+        gov = add_missing_spaces(gov)
+
+        print('**', gov)
+        return gov
 
     @staticmethod
     def extract_last_row(text):
