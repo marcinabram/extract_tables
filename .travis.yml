@@ -14,7 +14,7 @@ install:
 script:
   - coverage run --source='.' -m unittest discover tests "*_test.py"
   - coverage report -m --omit=
-    "tests/*","setup.py","*/__init__.py","env/*" --fail-under=100
+    "tests/*","setup.py","*/__init__.py","env/*" --fail-under=90
   - python tests/test_all_of_the_units.py
 
 # module will be tested only on listed branches
