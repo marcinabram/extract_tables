@@ -1,6 +1,8 @@
 """Reader for the document regarding schools."""
 import logging
 
+import re
+
 import pandas
 import PyPDF2
 import tabula
@@ -99,12 +101,12 @@ class Reader:
             line = [' ' + c if i in split else c for i, c in enumerate(line)]
             return "".join(line)
 
-        def remove_numners(line):
+        def remove_numers(line):
             """Remove numbers from string."""
             return "".join([i for i in line if i.isalpha()])
 
         gov = text.split('School')[0]
-        gov = remove_numners(gov)
+        gov = remove_numers(gov)
         gov = add_missing_spaces(gov)
 
         print('**', gov)
@@ -197,7 +199,7 @@ class Reader:
 
         def split_students_and_teachers(line):
             """Find number of students."""
-            if len(line) > 5:
+            if len(line) >= 5:
                 return line[:-2], line[-2:]
             else:
                 return line[:-1], line[-1]
@@ -243,11 +245,25 @@ class Reader:
         """Save table to csv."""
         def replace_line(line):
             """Translate keys."""
-            return {new: line[old] for new, old in zip(new_keys, old_keys)}
+            return {n: clean(line[old]) for n, old in zip(new_keys, old_keys)}
+
+        def clean(word):
+            """Clean the word from extra signs."""
+            if word is None:
+                return None
+
+            table = {8482: "'", 8217: "'", 8250: ""}
+            word = word.translate(table)  # translate above unicode characters
+            word = re.sub("[^(\w{ ,'-})]", " ", word)  # remove odd characters
+            word = re.sub("\s\B", "", word)  # replace many spaces to one
+
+            if word.isnumeric() and len(word) != 7:
+                return int(word)
+            return word
 
         old_keys = table[0].keys()
         new_keys = [k.replace('\r', ' ') for k in table[0].keys()]
-        return [replace_line(line) for line in table]
+        return [replace_line(line) for line in table if line]
 
     def __del__(self):
         """Clean up."""
