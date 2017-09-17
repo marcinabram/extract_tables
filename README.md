@@ -2,7 +2,7 @@
 
 Project for extracting tables from pdfs.
 
-[![Build Status](https://travis-ci.org/marcinabram/ocr.svg?branch=master)](https://travis-ci.org/marcinabram/extract_tables)
+![Build Status](https://travis-ci.org/marcinabram/extract_tables.svg?branch=master)
 
 # Instalation
 
