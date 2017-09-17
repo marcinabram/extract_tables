@@ -109,7 +109,6 @@ class Reader:
         gov = remove_numers(gov)
         gov = add_missing_spaces(gov)
 
-        print('**', gov)
         return gov
 
     @staticmethod
@@ -169,7 +168,12 @@ class Reader:
         """
         def extract_id(line):
             """Extract school id."""
-            return line[:7], line[7:]
+            letters = find_position_of_letters(line)
+            return line[:letters[0]][:7], line[letters[0]:]
+
+        def find_position_of_letters(line):
+            """Find positions of upper letters."""
+            return [i for i in range(len(line)) if line[i].isalpha()]
 
         def extract_school_type(line):
             """Extract school type. Return the rest of the """
