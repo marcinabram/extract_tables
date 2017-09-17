@@ -14,6 +14,7 @@ setuptools.setup(
         'coverage>=4.4.1,<5.0.0',
         'tabula-py>=1.0.0,<1.1.0',
         'PyPDF2>=1.26,<2.0',
+        'pdfminer.six==20170720',
     ],
     dependency_links=[],
     test_suite='extract_tables.tests',
